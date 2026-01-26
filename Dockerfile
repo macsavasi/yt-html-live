@@ -1,30 +1,21 @@
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV DISPLAY=:99
 
-# 1. Gerekli araçları ve Chrome bağımlılıklarını kur
-RUN apt-get update && apt-get install -y \
-    wget \
+RUN apt update && apt install -y \
     ffmpeg \
+    chromium-browser \
     xvfb \
     x11-xserver-utils \
-    dbus-x11 \
-    libasound2 \
-    libgbm1 \
     ca-certificates \
     fonts-liberation \
-    --no-install-recommends
-
-# 2. Google Chrome'u .deb olarak indir ve kur
-RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-    && apt-get install -y ./google-chrome-stable_current_amd64.deb \
-    && rm google-chrome-stable_current_amd64.deb \
-    && rm -rf /var/lib/apt/lists/*
-
-# 3. DBus ve izin düzeltmeleri (Hata almamak için gerekli)
-RUN mkdir -p /var/run/dbus && \
-    dbus-uuidgen > /var/lib/dbus/machine-id
+    libnss3 \
+    libxss1 \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
+    libdrm2 \
+    libgbm1 \
+    libasound2
 
 WORKDIR /app
 COPY start.sh .
