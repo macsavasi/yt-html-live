@@ -1,20 +1,33 @@
 #!/bin/bash
 
-export DISPLAY=:99
+# Önceki çalışmadan kalan kilit dosyalarını temizle (Çökme sonrası yeniden başlatmalarda önemlidir)
+rm -f /tmp/.X99-lock
 
-echo "Xvfb baslatiliyor..."
+echo "Xvfb sanal ekran baslatiliyor..."
+# Xvfb'yi başlat
 Xvfb :99 -ac -screen 0 1080x1920x24 &
-sleep 5
+
+# Xvfb'nin gerçekten hazır olmasını bekle (Maksimum 30 saniye dener)
+echo "Ekranın hazir olmasi bekleniyor..."
+for i in {1..30}; do
+  if xdpyinfo -display :99 >/dev/null 2>&1; then
+    echo "Ekran (X11) hazir!"
+    break
+  fi
+  echo "Ekran bekleniyor... ($i/30)"
+  sleep 1
+done
 
 # İmleci gizle
 xsetroot -cursor_name left_ptr || true
 
-echo "Google Chrome aciliyor..."
+echo "Google Chrome baslatiliyor..."
 
-# Chrome'u root olarak çalıştırmak için --no-sandbox ŞARTTIR.
-google-chrome \
+# Chrome Başlatma (Hataları önlemek için dbus-launch eklendi)
+dbus-launch google-chrome \
   --no-sandbox \
   --disable-gpu \
+  --disable-software-rasterizer \
   --disable-dev-shm-usage \
   --disable-background-networking \
   --disable-default-apps \
@@ -28,13 +41,15 @@ google-chrome \
   --hide-scrollbars \
   --mute-audio \
   --user-data-dir=/tmp/chrome-data \
+  --check-for-update-interval=31536000 \
   "https://macsavasi.github.io/macsavasi/" &
 
-sleep 15
+# Sayfanın yüklenmesi için güvenli bir bekleme süresi
+sleep 10
 
-echo "Yayin basliyor..."
+echo "FFmpeg yayini basliyor..."
 
-# FFmpeg komutu
+# YAYIN KOMUTU (Verdiğin yeni RTMP linki ile)
 ffmpeg -y \
   -f x11grab -draw_mouse 0 -video_size 1080x1920 -framerate 30 -thread_queue_size 512 -i :99 \
   -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
@@ -45,4 +60,4 @@ ffmpeg -y \
   -g 60 \
   -c:a aac -b:a 128k \
   -f flv \
-  rtmp://a.rtmp.youtube.com/live2/x6ab-az9c-v2a1-dedc-fhr5
+  rtmp://a.rtmp.youtube.com/live2/rwbf-by2t-h4xe-39rg-ahz7
