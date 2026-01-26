@@ -1,10 +1,25 @@
-- name: Start live stream
+name: Website to YouTube Live
+
+on:
+  workflow_dispatch:
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+
+    steps:
+      - name: Install system packages
+        run: |
+          sudo apt update
+          sudo apt install -y ffmpeg xvfb chromium-browser x11-utils fonts-dejavu-core
+
+      - name: Start live stream
         env:
           YT_KEY: ${{ secrets.YT_KEY }}
         run: |
           export DISPLAY=:99
 
-          # DİKEY sanal ekran (9:16)
           Xvfb :99 -screen 0 720x1280x24 &
           sleep 5
 
@@ -20,7 +35,6 @@
 
           sleep 10
 
-          # DİKEY video capture
           ffmpeg -re \
             -f x11grab -video_size 720x1280 -framerate 30 -i :99 \
             -f lavfi -i anullsrc \
