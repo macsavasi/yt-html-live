@@ -48,4 +48,4 @@ ffmpeg -y \
   -g 60 \
   -c:a aac -b:a 128k \
   -f flv \
-  rtmp://a.rtmp.youtube.com/live2/rwbf-by2t-h4xe-39rg-ahz7
+  rtmp://a.rtmp.youtube.com/live2/x6ab-az9c-v2a1-dedc-fhr5
