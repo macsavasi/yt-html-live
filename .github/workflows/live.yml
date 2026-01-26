@@ -12,7 +12,12 @@ jobs:
       - name: Install system packages
         run: |
           sudo apt update
-          sudo apt install -y ffmpeg xvfb chromium-browser x11-utils fonts-dejavu-core
+          sudo apt install -y \
+            ffmpeg \
+            xvfb \
+            chromium-browser \
+            x11-utils \
+            fonts-dejavu-core
 
       - name: Start live stream
         env:
@@ -20,9 +25,11 @@ jobs:
         run: |
           export DISPLAY=:99
 
+          # Dikey sanal ekran
           Xvfb :99 -screen 0 720x1280x24 &
           sleep 5
 
+          # Web sitesini aç
           chromium-browser \
             --no-sandbox \
             --disable-dev-shm-usage \
@@ -35,12 +42,13 @@ jobs:
 
           sleep 10
 
-          ffmpeg -re \
+          # YouTube Live + Telifsiz Radyo (SomaFM Groove Salad)
+          ffmpeg -re -fflags nobuffer \
             -f x11grab -video_size 720x1280 -framerate 30 -i :99 \
-            -f lavfi -i anullsrc \
+            -i https://ice4.somafm.com/groovesalad-128-mp3 \
             -c:v libx264 -preset veryfast -pix_fmt yuv420p \
             -b:v 1800k -maxrate 1800k -bufsize 3600k \
             -g 60 \
-            -c:a aac -b:a 128k \
+            -c:a aac -b:a 128k -af "volume=0.6" \
             -f flv \
             rtmp://a.rtmp.youtube.com/live2/$YT_KEY
