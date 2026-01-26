@@ -41,4 +41,4 @@ ffmpeg -re \
   -g 60 \
   -c:a aac -b:a 128k \
   -f flv \
-  rtmp://a.rtmp.youtube.com/live2/YOUTUBE_STREAM_KEY
+  rtmp://a.rtmp.youtube.com/live2/rwbf-by2t-h4xe-39rg-ahz7
