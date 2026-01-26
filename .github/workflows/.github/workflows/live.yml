@@ -36,11 +36,22 @@ jobs:
           sleep 10
 
           ffmpeg -re \
-            -f x11grab -video_size 720x1280 -framerate 30 -i :99 \
-            -f lavfi -i anullsrc \
-            -c:v libx264 -preset veryfast -pix_fmt yuv420p \
-            -b:v 1800k -maxrate 1800k -bufsize 3600k \
-            -g 60 \
-            -c:a aac -b:a 128k \
-            -f flv \
-            rtmp://a.rtmp.youtube.com/live2/$YT_KEY
+  -f x11grab -video_size 720x1280 -framerate 30 -i :99 \
+  -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
+  -c:v libx264 \
+  -preset veryfast \
+  -profile:v high \
+  -level 4.2 \
+  -pix_fmt yuv420p \
+  -r 30 \
+  -g 60 \
+  -keyint_min 60 \
+  -sc_threshold 0 \
+  -b:v 1800k \
+  -maxrate 1800k \
+  -bufsize 3600k \
+  -c:a aac \
+  -b:a 128k \
+  -ar 44100 \
+  -f flv \
+  rtmp://a.rtmp.youtube.com/live2/$YT_KEY
