@@ -6,6 +6,7 @@ RUN apt update && apt install -y \
     ffmpeg \
     chromium-browser \
     xvfb \
+    x11-xserver-utils \
     ca-certificates \
     fonts-liberation \
     libnss3 \
@@ -14,8 +15,7 @@ RUN apt update && apt install -y \
     libgtk-3-0 \
     libdrm2 \
     libgbm1 \
-    libasound2 \
-    wget
+    libasound2
 
 WORKDIR /app
 COPY start.sh .
