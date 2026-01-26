@@ -2,18 +2,16 @@
 
 export DISPLAY=:99
 
-# DİKEY sanal ekran (1080x1920)
 echo "Xvfb baslatiliyor..."
 Xvfb :99 -ac -screen 0 1080x1920x24 &
 sleep 5
 
-# Cursor gizle (Hata verirse devam et)
+# İmleci gizle
 xsetroot -cursor_name left_ptr || true
 
 echo "Google Chrome aciliyor..."
 
-# Google Chrome Başlatma
-# --disable-software-rasterizer KALDIRILDI (Çünkü GPU yok, software lazım)
+# Chrome'u root olarak çalıştırmak için --no-sandbox ŞARTTIR.
 google-chrome \
   --no-sandbox \
   --disable-gpu \
@@ -30,14 +28,13 @@ google-chrome \
   --hide-scrollbars \
   --mute-audio \
   --user-data-dir=/tmp/chrome-data \
-  --disable-infobars \
   "https://macsavasi.github.io/macsavasi/" &
 
 sleep 15
 
 echo "Yayin basliyor..."
 
-# YouTube Shorts akışı
+# FFmpeg komutu
 ffmpeg -y \
   -f x11grab -draw_mouse 0 -video_size 1080x1920 -framerate 30 -thread_queue_size 512 -i :99 \
   -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
