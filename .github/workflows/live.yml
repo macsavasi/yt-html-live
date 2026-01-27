@@ -1,4 +1,4 @@
-name: Website to YouTube Live (WITH AUDIO)
+name: Website to YouTube Live (FINAL STABLE)
 
 on:
   workflow_dispatch:
@@ -6,19 +6,26 @@ on:
 jobs:
   live:
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    timeout-minutes: 360   # 6 saat
 
     steps:
-      - name: Install system packages
+      - name: Install system dependencies
         run: |
           sudo apt update
           sudo apt install -y \
             ffmpeg \
             xvfb \
             chromium-browser \
-            pulseaudio \
-            alsa-utils
+            pulseaudio
 
+      # 🔳 Sanal ekran (imleçsüz)
+      - name: Start virtual display
+        run: |
+          Xvfb :99 -screen 0 720x1280x24 -nocursor &
+          echo "DISPLAY=:99" >> $GITHUB_ENV
+          sleep 3
+
+      # 🔊 PulseAudio (browser sesi yakalamak için)
       - name: Start PulseAudio
         run: |
           pulseaudio --start
@@ -26,35 +33,45 @@ jobs:
           pactl set-default-sink virtual_sink
           pactl set-default-source virtual_sink.monitor
 
-      - name: Start virtual display
+      # 🌐 Website’i aç (çeviri / popup / imleç yok)
+      - name: Open website in Chromium
         run: |
-          Xvfb :99 -screen 0 720x1280x24 &
-          sleep 5
-
-      - name: Open website (audio enabled)
-        run: |
-          export DISPLAY=:99
           chromium-browser \
             --no-sandbox \
             --disable-dev-shm-usage \
             --disable-gpu \
+            --disable-infobars \
+            --disable-translate \
+            --disable-features=TranslateUI \
+            --no-first-run \
             --autoplay-policy=no-user-gesture-required \
             --window-size=720,1280 \
             --kiosk \
-            --hide-scrollbars \
             "https://macsavasi.github.io/macsavasi/" &
-          sleep 10
+          sleep 8
 
-      - name: Stream to YouTube (VIDEO + AUDIO)
+      # 📡 YouTube Live Stream
+      - name: Stream to YouTube Live
         env:
           YT_KEY: ${{ secrets.YT_KEY }}
         run: |
           ffmpeg -re \
-            -f x11grab -video_size 720x1280 -framerate 30 -i :99 \
-            -f pulse -i virtual_sink.monitor \
-            -c:v libx264 -preset veryfast -pix_fmt yuv420p \
-            -b:v 1800k -maxrate 1800k -bufsize 3600k \
+            -f x11grab \
+            -draw_mouse 0 \
+            -video_size 720x1280 \
+            -framerate 30 \
+            -i :99 \
+            -f pulse \
+            -i default \
+            -c:v libx264 \
+            -preset veryfast \
+            -pix_fmt yuv420p \
+            -b:v 2000k \
+            -maxrate 2000k \
+            -bufsize 4000k \
             -g 60 \
-            -c:a aac -b:a 128k -ar 44100 \
+            -c:a aac \
+            -b:a 128k \
+            -ar 44100 \
             -f flv \
             rtmp://a.rtmp.youtube.com/live2/$YT_KEY
