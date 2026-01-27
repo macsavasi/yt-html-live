@@ -12,24 +12,16 @@ jobs:
       - name: Install system packages
         run: |
           sudo apt update
-          sudo apt install -y \
-            ffmpeg \
-            xvfb \
-            chromium-browser \
-            x11-utils \
-            fonts-dejavu-core
+          sudo apt install -y ffmpeg xvfb chromium-browser
 
-      - name: Start live stream
-        env:
-          YT_KEY: ${{ secrets.YT_KEY }}
+      - name: Start virtual display
         run: |
-          export DISPLAY=:99
-
-          # DİKEY SANAL EKRAN (9:16)
           Xvfb :99 -screen 0 720x1280x24 &
           sleep 5
 
-          # WEBSİTEYİ AÇ
+      - name: Open website
+        run: |
+          export DISPLAY=:99
           chromium-browser \
             --no-sandbox \
             --disable-dev-shm-usage \
@@ -38,20 +30,19 @@ jobs:
             --window-size=720,1280 \
             --kiosk \
             --hide-scrollbars \
-            "https://macsavasi.github.io/macsavasi/" &
-
+            "https://macsavasi.github.io/macsavasi/?key=${{ secrets.YT_API_KEY }}" &
           sleep 10
 
-          # YOUTUBE CANLI YAYIN
-          # (RADYO AUDIO SENKRON + PTS FIX)
-          ffmpeg -re -fflags nobuffer \
+      - name: Stream to YouTube
+        env:
+          YT_KEY: ${{ secrets.YT_KEY }}
+        run: |
+          ffmpeg -re \
             -f x11grab -video_size 720x1280 -framerate 30 -i :99 \
-            -i https://ice4.somafm.com/groovesalad-128-mp3 \
-            -map 0:v:0 -map 1:a:0 \
+            -f lavfi -i anullsrc \
             -c:v libx264 -preset veryfast -pix_fmt yuv420p \
             -b:v 1800k -maxrate 1800k -bufsize 3600k \
-            -g 60 -keyint_min 60 \
-            -c:a aac -ar 44100 -ac 2 -b:a 128k \
-            -af "aresample=async=1:first_pts=0,volume=0.6" \
+            -g 60 \
+            -c:a aac -b:a 128k \
             -f flv \
             rtmp://a.rtmp.youtube.com/live2/$YT_KEY
