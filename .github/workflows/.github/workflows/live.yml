@@ -1,4 +1,4 @@
-name: Website to YouTube Live
+name: Website to YouTube Live (WITH AUDIO)
 
 on:
   workflow_dispatch:
@@ -12,14 +12,26 @@ jobs:
       - name: Install system packages
         run: |
           sudo apt update
-          sudo apt install -y ffmpeg xvfb chromium-browser
+          sudo apt install -y \
+            ffmpeg \
+            xvfb \
+            chromium-browser \
+            pulseaudio \
+            alsa-utils
+
+      - name: Start PulseAudio
+        run: |
+          pulseaudio --start
+          pactl load-module module-null-sink sink_name=virtual_sink
+          pactl set-default-sink virtual_sink
+          pactl set-default-source virtual_sink.monitor
 
       - name: Start virtual display
         run: |
           Xvfb :99 -screen 0 720x1280x24 &
           sleep 5
 
-      - name: Open website
+      - name: Open website (audio enabled)
         run: |
           export DISPLAY=:99
           chromium-browser \
@@ -30,19 +42,19 @@ jobs:
             --window-size=720,1280 \
             --kiosk \
             --hide-scrollbars \
-            "https://macsavasi.github.io/macsavasi/?key=${{ secrets.YT_API_KEY }}" &
+            "https://macsavasi.github.io/macsavasi/" &
           sleep 10
 
-      - name: Stream to YouTube
+      - name: Stream to YouTube (VIDEO + AUDIO)
         env:
           YT_KEY: ${{ secrets.YT_KEY }}
         run: |
           ffmpeg -re \
             -f x11grab -video_size 720x1280 -framerate 30 -i :99 \
-            -f lavfi -i anullsrc \
+            -f pulse -i virtual_sink.monitor \
             -c:v libx264 -preset veryfast -pix_fmt yuv420p \
             -b:v 1800k -maxrate 1800k -bufsize 3600k \
             -g 60 \
-            -c:a aac -b:a 128k \
+            -c:a aac -b:a 128k -ar 44100 \
             -f flv \
             rtmp://a.rtmp.youtube.com/live2/$YT_KEY
