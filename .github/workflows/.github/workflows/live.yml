@@ -6,7 +6,7 @@ on:
 jobs:
   live:
     runs-on: ubuntu-latest
-    timeout-minutes: 360   # 6 saat
+    timeout-minutes: 360
 
     steps:
       - name: Install system dependencies
@@ -17,28 +17,25 @@ jobs:
             xvfb \
             chromium-browser \
             pulseaudio \
-            pactl
+            pulseaudio-utils
 
-      # 🔳 Sanal ekran (imleç tamamen kapalı)
+      # 🖥️ Sanal ekran (imleç yok)
       - name: Start virtual display
         run: |
           Xvfb :99 -screen 0 720x1280x24 -nocursor &
           echo "DISPLAY=:99" >> $GITHUB_ENV
           sleep 3
 
-      # 🔊 PulseAudio (Chromium sesi yakalamak için)
+      # 🔊 PulseAudio (browser sesi almak için)
       - name: Start PulseAudio
         run: |
           pulseaudio --start
           pactl load-module module-null-sink sink_name=virtual_sink
           pactl set-default-sink virtual_sink
           pactl set-default-source virtual_sink.monitor
-          sleep 2
 
-      # 🌐 Website’i aç (ÇEVİRİ / INFOBAR / POPUP TAMAMEN KAPALI)
+      # 🌐 Website’i aç (çeviri / popup / imleç yok)
       - name: Open website in Chromium
-        env:
-          DISPLAY: :99
         run: |
           chromium-browser \
             --no-sandbox \
@@ -57,7 +54,7 @@ jobs:
             "https://macsavasi.github.io/macsavasi/" &
           sleep 8
 
-      # 📡 YouTube Live Stream (Video + Site Sesi)
+      # 📡 YouTube Live
       - name: Stream to YouTube Live
         env:
           YT_KEY: ${{ secrets.YT_KEY }}
