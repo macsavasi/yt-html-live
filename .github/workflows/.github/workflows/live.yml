@@ -33,7 +33,7 @@ jobs:
       # ================================
       - name: Start Xvfb (cursor disabled)
         run: |
-          Xvfb :99 -screen 0 720x1280x24 -nocursor &
+          Xvfb :99 -screen 0 1080x1920 -nocursor &
           echo "DISPLAY=:99" >> $GITHUB_ENV
           sleep 3
 
@@ -93,7 +93,7 @@ jobs:
 
           ffmpeg -loglevel info -stats -re \
             -f x11grab \
-            -video_size 720x1280 \
+            -video_size 1080x1920 \
             -framerate 30 \
             -i :99 \
             -f pulse \
