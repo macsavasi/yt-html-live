@@ -6,19 +6,15 @@ on:
 jobs:
   live:
     runs-on: ubuntu-latest
-    timeout-minutes: 360   # 6 saat
+    timeout-minutes: 360
+
+    env:
+      DISPLAY: :99
 
     steps:
-      # ================================
-      # SYSTEM UPDATE
-      # ================================
       - name: Update system
-        run: |
-          sudo apt update
+        run: sudo apt update
 
-      # ================================
-      # DEPENDENCIES
-      # ================================
       - name: Install dependencies
         run: |
           sudo apt install -y \
@@ -26,24 +22,19 @@ jobs:
             xvfb \
             chromium-browser \
             pulseaudio \
-            unclutter
+            x11-utils
 
       # ================================
-      # VIRTUAL DISPLAY (NO CURSOR)
+      # START XVFB (NO CURSOR)
       # ================================
-      - name: Start Xvfb (cursor disabled)
+      - name: Start Xvfb
         run: |
-          Xvfb :99 -screen 0 1080x1920 -nocursor &
-          echo "DISPLAY=:99" >> $GITHUB_ENV
-          sleep 3
-
-      # EXTRA CURSOR KILL (GARANTİ)
-      - name: Hide mouse cursor
-        run: |
-          unclutter -idle 0 -root &
+          Xvfb :99 -screen 0 1080x1920x24 -nocursor &
+          sleep 5
+          xdpyinfo -display :99
 
       # ================================
-      # AUDIO PIPELINE (CHROMIUM → FFMPEG)
+      # AUDIO PIPELINE
       # ================================
       - name: Start PulseAudio
         run: |
@@ -54,59 +45,51 @@ jobs:
           sleep 3
 
       # ================================
-      # OPEN WEBSITE (NO TRANSLATE / NO UI / NO POPUP)
+      # OPEN WEBSITE (KIOSK, NO UI)
       # ================================
-      - name: Open website in Chromium (LOCKED)
+      - name: Open website in Chromium
         run: |
           chromium-browser \
             --no-sandbox \
             --disable-dev-shm-usage \
             --disable-gpu \
             --disable-infobars \
-            --disable-notifications \
-            --disable-popup-blocking \
             --disable-translate \
-            --disable-features=Translate,TranslateUI,TranslateBubble,OptimizationHintsFetching \
-            --lang=en-US \
-            --force-dark-mode \
+            --disable-features=Translate,TranslateUI \
+            --lang=tr-TR \
             --no-first-run \
             --no-default-browser-check \
+            --disable-notifications \
             --autoplay-policy=no-user-gesture-required \
-            --disable-session-crashed-bubble \
-            --disable-restore-session-state \
-            --disable-component-update \
-            --window-size=720,1280 \
+            --window-size=1080,1920 \
             --kiosk \
             "https://macsavasi.github.io/macsavasi/" &
           sleep 10
 
       # ================================
-      # STREAM TO YOUTUBE (BLOCKING)
+      # STREAM TO YOUTUBE (LOCKED)
       # ================================
       - name: Stream to YouTube Live
         env:
           YT_KEY: ${{ secrets.YT_KEY }}
         run: |
-          echo "==============================="
-          echo "🎥 FFmpeg STREAM BAŞLIYOR"
-          echo "==============================="
-
           ffmpeg -loglevel info -stats -re \
             -f x11grab \
+            -draw_mouse 0 \
             -video_size 1080x1920 \
             -framerate 30 \
-            -i :99 \
+            -i :99.0 \
             -f pulse \
             -i default \
             -c:v libx264 \
             -preset veryfast \
             -pix_fmt yuv420p \
-            -b:v 2000k \
-            -maxrate 2000k \
-            -bufsize 4000k \
+            -b:v 3500k \
+            -maxrate 3500k \
+            -bufsize 7000k \
             -g 60 \
             -c:a aac \
             -b:a 128k \
             -ar 44100 \
             -f flv \
-            rtmp://a.rtmp.youtube.com/live2/${YT_KEY}
+            rtmp://a.rtmp.youtube.com/live2/$YT_KEY
