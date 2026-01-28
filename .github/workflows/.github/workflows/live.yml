@@ -6,29 +6,41 @@ on:
 jobs:
   live:
     runs-on: ubuntu-latest
-    timeout-minutes: 360   # 6 saat – erken bitmemesi için
+    timeout-minutes: 360   # 6 saat
 
     steps:
+      # ================================
+      # SYSTEM UPDATE
+      # ================================
       - name: Update system
         run: |
           sudo apt update
 
+      # ================================
+      # DEPENDENCIES
+      # ================================
       - name: Install dependencies
         run: |
           sudo apt install -y \
             ffmpeg \
             xvfb \
             chromium-browser \
-            pulseaudio
+            pulseaudio \
+            unclutter
 
       # ================================
       # VIRTUAL DISPLAY (NO CURSOR)
       # ================================
-      - name: Start Xvfb
+      - name: Start Xvfb (cursor disabled)
         run: |
           Xvfb :99 -screen 0 720x1280x24 -nocursor &
           echo "DISPLAY=:99" >> $GITHUB_ENV
-          sleep 5
+          sleep 3
+
+      # EXTRA CURSOR KILL (GARANTİ)
+      - name: Hide mouse cursor
+        run: |
+          unclutter -idle 0 -root &
 
       # ================================
       # AUDIO PIPELINE (CHROMIUM → FFMPEG)
@@ -42,29 +54,34 @@ jobs:
           sleep 3
 
       # ================================
-      # OPEN WEBSITE (NO TRANSLATE / NO UI)
+      # OPEN WEBSITE (NO TRANSLATE / NO UI / NO POPUP)
       # ================================
-      - name: Open website in Chromium
+      - name: Open website in Chromium (LOCKED)
         run: |
           chromium-browser \
             --no-sandbox \
             --disable-dev-shm-usage \
             --disable-gpu \
             --disable-infobars \
+            --disable-notifications \
+            --disable-popup-blocking \
             --disable-translate \
-            --disable-features=Translate,TranslateUI \
-            --lang=tr-TR \
+            --disable-features=Translate,TranslateUI,TranslateBubble,OptimizationHintsFetching \
+            --lang=en-US \
+            --force-dark-mode \
             --no-first-run \
             --no-default-browser-check \
-            --disable-notifications \
             --autoplay-policy=no-user-gesture-required \
+            --disable-session-crashed-bubble \
+            --disable-restore-session-state \
+            --disable-component-update \
             --window-size=720,1280 \
             --kiosk \
             "https://macsavasi.github.io/macsavasi/" &
           sleep 10
 
       # ================================
-      # STREAM (BLOCKING – ASIL KİLİT)
+      # STREAM TO YOUTUBE (BLOCKING)
       # ================================
       - name: Stream to YouTube Live
         env:
@@ -92,4 +109,4 @@ jobs:
             -b:a 128k \
             -ar 44100 \
             -f flv \
-            rtmp://a.rtmp.youtube.com/live2/$YT_KEY
+            rtmp://a.rtmp.youtube.com/live2/${YT_KEY}
