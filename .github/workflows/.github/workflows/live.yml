@@ -6,36 +6,27 @@ on:
 jobs:
   live:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 360   # 6 saat
 
     steps:
+      # 📦 Sistem bağımlılıkları
       - name: Install system dependencies
         run: |
           sudo apt update
           sudo apt install -y \
             ffmpeg \
             xvfb \
-            chromium-browser \
-            pulseaudio \
-            pulseaudio-utils
+            chromium-browser
 
-      # 🖥️ Sanal ekran (imleç yok)
+      # 🖥️ Sanal ekran (imleç tamamen kapalı)
       - name: Start virtual display
         run: |
           Xvfb :99 -screen 0 720x1280x24 -nocursor &
           echo "DISPLAY=:99" >> $GITHUB_ENV
           sleep 3
 
-      # 🔊 PulseAudio (browser sesi almak için)
-      - name: Start PulseAudio
-        run: |
-          pulseaudio --start
-          pactl load-module module-null-sink sink_name=virtual_sink
-          pactl set-default-sink virtual_sink
-          pactl set-default-source virtual_sink.monitor
-
-      # 🌐 Website’i aç (çeviri / popup / imleç yok)
-      - name: Open website in Chromium
+      # 🌐 YouTube Live aç (KANAL HANDLE İLE – ID OTOMATİK)
+      - name: Open YouTube Live (AUTO ID MODE)
         run: |
           chromium-browser \
             --no-sandbox \
@@ -51,31 +42,5 @@ jobs:
             --autoplay-policy=no-user-gesture-required \
             --window-size=720,1280 \
             --kiosk \
-            "https://macsavasi.github.io/macsavasi/" &
-          sleep 8
-
-      # 📡 YouTube Live
-      - name: Stream to YouTube Live
-        env:
-          YT_KEY: ${{ secrets.YT_KEY }}
-        run: |
-          ffmpeg -re \
-            -f x11grab \
-            -draw_mouse 0 \
-            -video_size 720x1280 \
-            -framerate 30 \
-            -i :99 \
-            -f pulse \
-            -i default \
-            -c:v libx264 \
-            -preset veryfast \
-            -pix_fmt yuv420p \
-            -b:v 2000k \
-            -maxrate 2000k \
-            -bufsize 4000k \
-            -g 60 \
-            -c:a aac \
-            -b:a 128k \
-            -ar 44100 \
-            -f flv \
-            rtmp://a.rtmp.youtube.com/live2/$YT_KEY
+            "https://www.youtube.com/@oyunhaberleri360/live" &
+          sleep 12
