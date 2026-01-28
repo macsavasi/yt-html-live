@@ -1,4 +1,4 @@
-name: Website to YouTube Live (FINAL STABLE)
+name: Website to YouTube Live (FINAL LOCKED)
 
 on:
   workflow_dispatch:
@@ -6,41 +6,90 @@ on:
 jobs:
   live:
     runs-on: ubuntu-latest
-    timeout-minutes: 360   # 6 saat
+    timeout-minutes: 360   # 6 saat – erken bitmemesi için
 
     steps:
-      # 📦 Sistem bağımlılıkları
-      - name: Install system dependencies
+      - name: Update system
         run: |
           sudo apt update
+
+      - name: Install dependencies
+        run: |
           sudo apt install -y \
             ffmpeg \
             xvfb \
-            chromium-browser
+            chromium-browser \
+            pulseaudio
 
-      # 🖥️ Sanal ekran (imleç tamamen kapalı)
-      - name: Start virtual display
+      # ================================
+      # VIRTUAL DISPLAY (NO CURSOR)
+      # ================================
+      - name: Start Xvfb
         run: |
           Xvfb :99 -screen 0 720x1280x24 -nocursor &
           echo "DISPLAY=:99" >> $GITHUB_ENV
+          sleep 5
+
+      # ================================
+      # AUDIO PIPELINE (CHROMIUM → FFMPEG)
+      # ================================
+      - name: Start PulseAudio
+        run: |
+          pulseaudio --start
+          pactl load-module module-null-sink sink_name=vsink
+          pactl set-default-sink vsink
+          pactl set-default-source vsink.monitor
           sleep 3
 
-      # 🌐 YouTube Live aç (KANAL HANDLE İLE – ID OTOMATİK)
-      - name: Open YouTube Live (AUTO ID MODE)
+      # ================================
+      # OPEN WEBSITE (NO TRANSLATE / NO UI)
+      # ================================
+      - name: Open website in Chromium
         run: |
           chromium-browser \
             --no-sandbox \
             --disable-dev-shm-usage \
             --disable-gpu \
             --disable-infobars \
-            --lang=tr-TR \
             --disable-translate \
             --disable-features=Translate,TranslateUI \
+            --lang=tr-TR \
             --no-first-run \
             --no-default-browser-check \
             --disable-notifications \
             --autoplay-policy=no-user-gesture-required \
             --window-size=720,1280 \
             --kiosk \
-            "https://www.youtube.com/@oyunhaberleri360/live" &
-          sleep 12
+            "https://macsavasi.github.io/macsavasi/" &
+          sleep 10
+
+      # ================================
+      # STREAM (BLOCKING – ASIL KİLİT)
+      # ================================
+      - name: Stream to YouTube Live
+        env:
+          YT_KEY: ${{ secrets.YT_KEY }}
+        run: |
+          echo "==============================="
+          echo "🎥 FFmpeg STREAM BAŞLIYOR"
+          echo "==============================="
+
+          ffmpeg -loglevel info -stats -re \
+            -f x11grab \
+            -video_size 720x1280 \
+            -framerate 30 \
+            -i :99 \
+            -f pulse \
+            -i default \
+            -c:v libx264 \
+            -preset veryfast \
+            -pix_fmt yuv420p \
+            -b:v 2000k \
+            -maxrate 2000k \
+            -bufsize 4000k \
+            -g 60 \
+            -c:a aac \
+            -b:a 128k \
+            -ar 44100 \
+            -f flv \
+            rtmp://a.rtmp.youtube.com/live2/$YT_KEY
